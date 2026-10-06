@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<title>Dyson Fan</title>
+<style>
+:root {
+  --bg: #f4f5f7; --card: #fff; --text: #16181d; --muted: #6b7180; --line: #e3e5ea;
+  --accent: #6c4cf5; --accent-text: #fff; --on: #1f9d55; --off: #9aa0ab; --warn: #c2410c;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0f1115; --card: #181b22; --text: #eceef3; --muted: #8b91a0; --line: #262a33;
+    --accent: #8b6cff; --on: #34c47c; --off: #5b616e; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent; }
+main { max-width: 480px; margin: 0 auto; padding: 20px 16px calc(24px + env(safe-area-inset-bottom)); }
+header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+h1 { font-size: 22px; margin: 0; }
+.status { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--off); }
+.dot.ok { background: var(--on); } .dot.err { background: var(--warn); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+.label { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+.stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.stat b { display: block; font-size: 26px; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 13px; color: var(--muted); }
+.power { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+button { font: inherit; border: 1px solid var(--line); background: var(--bg); color: var(--text);
+  border-radius: 12px; padding: 14px 10px; min-height: 48px; cursor: pointer; }
+button:active { transform: scale(.98); }
+button:disabled { opacity: .5; }
+button.sel { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.speeds { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.speeds button { padding: 12px 0; font-variant-numeric: tabular-nums; }
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.note { font-size: 12px; color: var(--muted); margin-top: 10px; }
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+  background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 14px;
+  opacity: 0; transition: opacity .2s; pointer-events: none; max-width: calc(100% - 32px); }
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Dyson Fan</h1>
+    <div class="status"><span class="dot" id="dot"></span><span id="conn">Connecting…</span></div>
+  </header>
+
+  <section class="card">
+    <div class="stats">
+      <div class="stat"><b id="temp">–</b><span>Temperature</span></div>
+      <div class="stat"><b id="hum">–</b><span>Humidity</span></div>
+      <div class="stat"><b id="pm25">–</b><span>PM2.5 µg/m³</span></div>
+      <div class="stat"><b id="pm10">–</b><span>PM10 µg/m³</span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="label">Power</div>
+    <div class="power">
+      <button id="on" data-action="on">On</button>
+      <button id="off" data-action="off">Off</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="label">Speed</div>
+    <div class="speeds" id="speeds"></div>
+  </section>
+
+  <section class="card">
+    <div class="label">Modes</div>
+    <div class="modes">
+      <button data-action="auto_mode_on">Auto on</button>
+      <button data-action="auto_mode_off">Auto off</button>
+      <button data-action="night_mode">Night mode</button>
+      <button data-action="sw_rotation">Oscillation</button>
+      <button data-action="direction">Airflow direction</button>
+    </div>
+    <div class="note">Modes are sent like remote button presses; the fan doesn't report them back.</div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const speeds = $("speeds");
+for (let i = 1; i <= 10; i++) {
+  const b = document.createElement("button");
+  b.textContent = i; b.dataset.action = "speed"; b.dataset.level = i;
+  speeds.appendChild(b);
+}
+
+let toastTimer;
+function toast(msg) {
+  $("toast").textContent = msg; $("toast").classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => $("toast").classList.remove("show"), 2200);
+}
+
+function render(s) {
+  $("temp").textContent = s.temperature.toFixed(1) + "°";
+  $("hum").textContent = Math.round(s.humidity) + "%";
+  $("pm25").textContent = s.pm25_level;
+  $("pm10").textContent = s.pm10_level;
+  $("on").classList.toggle("sel", !!s.state);
+  $("off").classList.toggle("sel", !s.state);
+  speeds.querySelectorAll("button").forEach((b) =>
+    b.classList.toggle("sel", !!s.state && +b.dataset.level === s.vent_level));
+}
+
+async function refresh() {
+  try {
+    const r = await fetch("api/state", { cache: "no-store" });
+    if (!r.ok) throw new Error((await r.json()).error || r.status);
+    render(await r.json());
+    $("dot").className = "dot ok"; $("conn").textContent = "Connected";
+  } catch (e) {
+    $("dot").className = "dot err";
+    $("conn").textContent = /searching/.test(e.message) ? "Searching for fan…" : "Fan unreachable";
+  }
+}
+
+let busy = false;
+document.addEventListener("click", async (ev) => {
+  const b = ev.target.closest("button[data-action]");
+  if (!b || busy) return;
+  busy = true; b.disabled = true;
+  const body = { action: b.dataset.action };
+  if (b.dataset.level) body.level = +b.dataset.level;
+  try {
+    const r = await fetch("api/cmd", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (!r.ok) throw new Error((await r.json()).error || r.status);
+    toast("Sent: " + b.textContent);
+    setTimeout(refresh, 800);
+  } catch (e) {
+    toast("Failed: " + e.message);
+  } finally {
+    busy = false; b.disabled = false;
+  }
+});
+
+refresh();
+setInterval(() => { if (!document.hidden) refresh(); }, 5000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
+</script>
+</body>
+</html>

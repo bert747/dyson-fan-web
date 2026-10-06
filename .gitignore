@@ -1,0 +1,7 @@
+# Flash dumps contain Wi-Fi credentials
+backup/
+
+# Build output
+firmware/.pio/
+firmware/src/page.h
+__pycache__/
