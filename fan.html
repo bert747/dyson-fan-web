@@ -1,0 +1,1004 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Dyson">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" href="icons/icon-180.png">
+<link rel="manifest" href="manifest.json">
+<title>Dyson</title>
+<style>
+@font-face { font-family: "Jost"; font-weight: 400; src: url("fonts/jost-400.woff2") format("woff2"); }
+@font-face { font-family: "Jost"; font-weight: 500; src: url("fonts/jost-500.woff2") format("woff2"); }
+:root {
+  --bg: #000; --top: #1c1c1e; --card: #222224; --btn: #3a3a3c; --text: #fff; --muted: #8e8e93;
+  --good: #5db85c; --fair: #f4c20d; --poor: #f08a24; --vpoor: #e5383b; --epoor: #8e44ad; --severe: #7b1e1e;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { background: var(--bg); }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 17px/1.3 "Jost", "Futura", system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
+.wrap { max-width: 480px; margin: 0 auto; }
+
+/* Top section */
+.top { background: var(--top); border-radius: 22px; margin: calc(12px + env(safe-area-inset-top)) 16px 0;
+  padding: 14px 16px 0; overflow: hidden; }
+.bar { display: flex; align-items: center; justify-content: center; position: relative; height: 32px; }
+.bar h1 { font-size: 22px; font-weight: 500; margin: 0; }
+.gear { position: absolute; right: -6px; width: 40px; height: 40px; border: 0; background: none; color: var(--text);
+  display: grid; place-items: center; cursor: pointer; }
+.gear svg { width: 24px; height: 24px; }
+.conn { position: absolute; left: 0; display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.conn i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.conn.ok i { background: var(--good); } .conn.err i { background: var(--vpoor); }
+.hero { display: block; width: 100%; height: auto; margin: 6px 0 4px; }
+.flow line { stroke: url(#flowGrad); stroke-width: 2.4; stroke-linecap: round; stroke-dasharray: 150 50;
+  animation: flow var(--dur, 1.6s) linear infinite; }
+.flow { transition: opacity .6s; }
+.off .flow { opacity: 0; }
+@keyframes flow { to { stroke-dashoffset: 200; } }
+
+.tabs { display: flex; gap: 24px; justify-content: center; }
+.tabs button { background: none; border: 0; color: var(--muted); font: inherit; font-size: 17px; padding: 10px 2px 12px;
+  border-bottom: 2px solid transparent; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.tabs button.sel { color: var(--text); border-color: var(--text); }
+.tabs svg { width: 18px; height: 18px; }
+
+/* Content */
+main { padding: 20px 16px calc(32px + env(safe-area-inset-bottom)); }
+.pane[hidden] { display: none; }
+.card { background: var(--card); border-radius: 22px; padding: 18px 20px 20px; margin-bottom: 14px; }
+.card h2 { font-size: 19px; font-weight: 400; margin: 0 0 14px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid2 .card { margin-bottom: 0; }
+.grid2 + .grid2, .grid2 + .card, .card + .grid2 { margin-top: 14px; }
+.row { display: flex; gap: 14px; align-items: center; }
+
+.round { width: 84px; height: 84px; border-radius: 50%; border: 0; background: var(--btn); color: var(--text);
+  display: grid; place-items: center; flex: none; cursor: pointer; font: inherit; font-size: 15px; letter-spacing: .5px;
+  transition: background .2s, color .2s, transform .1s; }
+.round svg { width: 38px; height: 38px; }
+.round.sel, .round.flash { background: #fff; color: #000; }
+.round:active { transform: scale(.96); }
+
+/* Airflow slider */
+.slider { flex: 1; height: 84px; border-radius: 18px; background: var(--btn); position: relative; overflow: hidden;
+  touch-action: none; cursor: pointer; }
+.slider .fill { position: absolute; inset: 0 auto 0 0; background: #fff; color: #000; border-radius: 18px 0 0 18px;
+  display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding-right: 12px;
+  font-size: 22px; font-weight: 500; transition: width .15s; min-width: 76px; }
+.slider .fill svg { width: 30px; height: 30px; }
+.slider.dim .fill { background: #8e8e93; }
+.slider.auto .fill { background: var(--btn); color: var(--muted); }
+
+.tile { display: flex; flex-direction: column; align-items: flex-start; gap: 18px; width: 100%; background: var(--card);
+  border: 0; border-radius: 22px; padding: 18px 20px 20px; color: var(--text); font: inherit; cursor: pointer; text-align: left;
+  transition: background .2s; }
+.tile h2 { font-size: 19px; font-weight: 400; margin: 0; }
+.tile svg { width: 28px; height: 28px; }
+.tile span { font-size: 15px; color: var(--muted); }
+.tile.flash { background: #3a3a3c; }
+.tile.on span { color: var(--text); }
+
+/* Data */
+.sect { display: flex; align-items: center; gap: 10px; font-size: 22px; margin: 4px 0 14px; }
+.sect svg { width: 22px; height: 22px; }
+.metric h2 { font-size: 17px; margin-bottom: 18px; }
+.val { display: flex; align-items: baseline; gap: 10px; }
+.val b { font-size: 32px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.val small { font-size: 14px; }
+.val i { width: 18px; height: 18px; border-radius: 50%; align-self: center; flex: none; background: var(--muted); }
+.big b { font-size: 34px; }
+.note { font-size: 13px; color: var(--muted); margin: 18px 4px 0; }
+.head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.pin { width: 32px; height: 32px; margin: -6px -8px 0 0; border-radius: 50%; border: 0; background: var(--btn);
+  color: var(--muted); display: grid; place-items: center; cursor: pointer; flex: none; transition: background .2s, color .2s; }
+.pin svg { width: 16px; height: 16px; }
+.pin.sel { background: #fff; color: #000; }
+
+/* Pinned readings on the Controls tab */
+.pinned { display: grid; grid-template-columns: repeat(var(--cols, 3), 1fr); gap: 10px; margin-bottom: 14px; }
+.pinned:empty { display: none; }
+.mini { background: var(--card); border-radius: 18px; padding: 12px 14px 14px; min-width: 0; }
+.mini h3 { font-size: 13px; font-weight: 400; color: var(--muted); margin: 0 0 6px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini .val { gap: 6px; }
+.mini .val b { font-size: 22px; white-space: nowrap; }
+.mini .val small { font-size: 12px; }
+.mini .val i { width: 10px; height: 10px; }
+
+/* Settings */
+.kv { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid #333; font-size: 16px; }
+.kv:first-of-type { border-top: 0; }
+.kv span:first-child { color: var(--muted); }
+.kv span:last-child { text-align: right; overflow-wrap: anywhere; }
+.danger { width: 100%; margin-top: 14px; padding: 16px; border: 0; border-radius: 16px; background: var(--btn);
+  color: #ff6b6b; font: inherit; font-size: 17px; cursor: pointer; }
+.danger:disabled { opacity: .5; }
+.card p { margin: 0; color: var(--muted); font-size: 15px; }
+
+.btn { width: 100%; margin-top: 14px; padding: 14px; border: 0; border-radius: 16px; background: var(--btn);
+  color: var(--text); font: inherit; font-size: 17px; cursor: pointer; }
+.btn:disabled { opacity: .5; }
+
+/* Chips (ranges, metrics, timer options, days) */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { border: 0; border-radius: 18px; padding: 8px 14px; background: var(--btn); color: var(--text);
+  font: inherit; font-size: 15px; cursor: pointer; }
+.chip.sel { background: #fff; color: #000; }
+
+/* History chart */
+.chart-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 14px 0 6px; min-height: 24px; }
+.chart-head b { font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.chart-head span { font-size: 14px; color: var(--muted); }
+.chart { display: block; width: 100%; height: auto; touch-action: pan-y; }
+.chart text { fill: var(--muted); font: 10px "Jost", sans-serif; }
+.chart .grid { stroke: #3a3a3c; stroke-width: 1; }
+.chart .line { fill: none; stroke: #fff; stroke-width: 1.8; stroke-linejoin: round; }
+.chart .cursor { stroke: #fff; stroke-opacity: .5; }
+.empty { color: var(--muted); font-size: 15px; padding: 24px 0; text-align: center; }
+
+/* Lists (summary, events, schedule) */
+.list { margin: 0; padding: 0; list-style: none; }
+.list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 11px 0;
+  border-top: 1px solid #333; font-size: 16px; }
+.list li:first-child { border-top: 0; padding-top: 0; }
+.list .sub { color: var(--muted); font-size: 14px; }
+.list .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; margin-right: 10px; }
+.list .grow { flex: 1; min-width: 0; display: flex; align-items: center; }
+.x { border: 0; background: none; color: var(--muted); font-size: 22px; line-height: 1; padding: 0 4px; cursor: pointer; }
+
+/* Filter bar */
+.bar-track { height: 10px; border-radius: 5px; background: var(--btn); overflow: hidden; margin-top: 14px; }
+.bar-fill { height: 100%; background: #fff; border-radius: 5px; transition: width .3s; }
+
+/* Toggle switch */
+.switch { position: relative; width: 46px; height: 28px; flex: none; }
+.switch input { opacity: 0; width: 100%; height: 100%; margin: 0; position: absolute; cursor: pointer; }
+.switch span { position: absolute; inset: 0; border-radius: 14px; background: var(--btn); transition: background .2s; pointer-events: none; }
+.switch span::after { content: ""; position: absolute; left: 3px; top: 3px; width: 22px; height: 22px; border-radius: 50%;
+  background: #fff; transition: transform .2s; }
+.switch input:checked + span { background: var(--good); }
+.switch input:checked + span::after { transform: translateX(18px); }
+
+/* Form fields */
+.field { display: flex; gap: 10px; margin-top: 12px; }
+.field input, .field select { flex: 1; min-width: 0; padding: 12px 14px; border: 0; border-radius: 14px; background: var(--btn);
+  color: var(--text); font: inherit; font-size: 16px; -webkit-appearance: none; appearance: none; }
+.field input[type="time"] { min-height: 46px; }
+.field .chip { flex: none; }
+.lbl { font-size: 14px; color: var(--muted); margin: 16px 0 0; }
+.results { margin-top: 8px; }
+.results button { display: block; width: 100%; text-align: left; border: 0; border-top: 1px solid #333; background: none;
+  color: var(--text); font: inherit; font-size: 16px; padding: 12px 2px; cursor: pointer; }
+.results button span { color: var(--muted); font-size: 14px; }
+
+/* Bottom sheet (timer, schedule) */
+.sheet { position: fixed; inset: 0; z-index: 10; display: flex; align-items: flex-end; justify-content: center; }
+.sheet[hidden] { display: none; }
+.sheet-bg { position: absolute; inset: 0; background: rgba(0, 0, 0, .6); }
+.sheet-card { position: relative; width: 100%; max-width: 480px; max-height: 88vh; overflow-y: auto; background: var(--top);
+  border-radius: 22px 22px 0 0; padding: 22px 20px calc(24px + env(safe-area-inset-bottom)); }
+.sheet-card h2 { font-size: 20px; font-weight: 500; text-align: center; margin: 0 0 18px; }
+.done { display: block; margin: 22px auto 0; min-width: 160px; padding: 14px 28px; border: 0; border-radius: 26px;
+  background: #4e2a84; color: #fff; font: inherit; font-size: 17px; cursor: pointer; }
+.timer-opts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.timer-opts .chip { padding: 14px 0; font-size: 16px; }
+.days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 12px; }
+.days .chip { padding: 10px 0; }
+
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+  background: #fff; color: #000; padding: 10px 18px; border-radius: 22px; font-size: 15px;
+  opacity: 0; transition: opacity .2s; pointer-events: none; max-width: calc(100% - 32px); z-index: 20; }
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="top off" id="top">
+    <div class="bar">
+      <h1>Purifier</h1>
+      <div class="conn" id="conn"><i></i><span id="connText"></span></div>
+      <button class="gear" id="gear" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5l1.6 2.6 3-.6.6 3 2.6 1.6-1.4 2.9 1.4 2.9-2.6 1.6-.6 3-3-.6L12 21.5l-1.6-2.6-3 .6-.6-3-2.6-1.6L5.6 12 4.2 9.1l2.6-1.6.6-3 3 .6z"/></svg>
+      </button>
+    </div>
+
+    <svg class="hero" viewBox="0 0 360 210" aria-hidden="true">
+      <defs>
+        <linearGradient id="flowGrad" x1="0" x2="1">
+          <stop offset="0" stop-color="#5aa9e6" stop-opacity="0"/>
+          <stop offset=".55" stop-color="#7cc0f2" stop-opacity=".55"/>
+          <stop offset="1" stop-color="#cfe9ff" stop-opacity=".9"/>
+        </linearGradient>
+        <linearGradient id="metal" x1="0" x2="1">
+          <stop offset="0" stop-color="#7d7f86"/><stop offset=".45" stop-color="#d9dbe0"/><stop offset="1" stop-color="#6c6e74"/>
+        </linearGradient>
+        <linearGradient id="loop" x1="0" x2="1">
+          <stop offset="0" stop-color="#bfc3cc"/><stop offset=".5" stop-color="#ffffff"/><stop offset="1" stop-color="#a9adb6"/>
+        </linearGradient>
+        <pattern id="grille" width="4" height="4" patternUnits="userSpaceOnUse">
+          <circle cx="2" cy="2" r=".8" fill="#4b4d52" opacity=".55"/>
+        </pattern>
+      </defs>
+      <g class="flow" id="flow">
+        <line x1="40" y1="34" x2="218" y2="40"/>
+        <line x1="20" y1="50" x2="218" y2="54"/>
+        <line x1="34" y1="66" x2="218" y2="68"/>
+        <line x1="14" y1="82" x2="218" y2="82"/>
+        <line x1="30" y1="98" x2="218" y2="96"/>
+        <line x1="18" y1="114" x2="218" y2="110"/>
+        <line x1="42" y1="130" x2="218" y2="124"/>
+      </g>
+      <rect x="212" y="18" width="38" height="124" rx="19" fill="none" stroke="url(#loop)" stroke-width="7"/>
+      <rect x="219" y="26" width="24" height="108" rx="12" fill="none" stroke="#7cc0f2" stroke-opacity=".25" stroke-width="2"/>
+      <rect x="215" y="140" width="32" height="56" rx="3" fill="url(#metal)"/>
+      <rect x="215" y="140" width="32" height="56" rx="3" fill="url(#grille)"/>
+      <rect x="213" y="194" width="36" height="9" rx="3" fill="#eef0f3"/>
+    </svg>
+
+    <nav class="tabs">
+      <button class="sel" data-tab="controls">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="2" width="10" height="20" rx="2"/><circle cx="10.5" cy="7" r="1" fill="currentColor"/><circle cx="13.5" cy="7" r="1" fill="currentColor"/><circle cx="10.5" cy="11" r="1" fill="currentColor"/><circle cx="13.5" cy="11" r="1" fill="currentColor"/></svg>
+        Controls</button>
+      <button data-tab="data">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6.4 6.4" /><path d="M12 12V3a9 9 0 0 1 6.4 15.4z" fill="currentColor"/></svg>
+        Data and insights</button>
+    </nav>
+  </section>
+
+  <main>
+    <div class="pane" id="controls">
+      <div class="pinned" id="pinned"></div>
+      <section class="card">
+        <h2>General controls</h2>
+        <div class="row">
+          <button class="round" id="power" aria-label="On/Off">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M12 3v8"/><path d="M6.6 6.6a7.5 7.5 0 1 0 10.8 0"/></svg>
+          </button>
+          <button class="round" data-press="night_mode" aria-label="Night mode">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M15.5 3.5a8.5 8.5 0 1 0 5 14.6A8 8 0 0 1 15.5 3.5z"/></svg>
+          </button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Airflow</h2>
+        <div class="row">
+          <button class="round" id="auto">AUTO</button>
+          <div class="slider" id="slider" role="slider" aria-label="Airflow speed" aria-valuemin="1" aria-valuemax="10">
+            <div class="fill" id="fill">
+              <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="1.8"/><path d="M12 10.2c-.6-3.4.4-6.6 3-7.2 2.4-.5 3.4 2.1 1.6 3.9-1.2 1.2-3 2-4.6 3.3zM13.6 12.9c3.2 1.1 5.5 3.6 4.7 6.1-.7 2.4-3.5 2-4.2-.4-.5-1.6-.4-3.6-.5-5.7zM10.4 12.9c-2.6 2.2-5.9 3-7.7 1-1.6-1.9.2-4 2.7-3.4 1.6.4 3.3 1.5 5 2.4z"/></svg>
+              <span id="level">–</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="grid2">
+        <button class="tile" data-press="sw_rotation">
+          <h2>Oscillation</h2>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.5 5 3 12l7.5 7zM13.5 5 21 12l-7.5 7z"/></svg>
+          <span>Tap to toggle</span>
+        </button>
+        <button class="tile" data-press="direction">
+          <h2>Direction</h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 8h14l-3-3M20 16H6l3 3"/></svg>
+          <span>Front / back</span>
+        </button>
+      </div>
+      <div class="grid2">
+        <button class="tile" id="timerTile">
+          <h2>Timer</h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 13l3.5-3.5M9.5 2.5h5"/></svg>
+          <span id="timerText">Off</span>
+        </button>
+        <button class="tile" id="schedTile">
+          <h2>Schedule</h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+          <span id="schedText">None</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="pane" id="data" hidden>
+      <div class="sect">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3 2 11.5h3V21h5v-6h4v6h5v-9.5h3z"/></svg>
+        Indoor data
+      </div>
+      <section class="card metric big" data-key="aq"></section>
+      <div class="grid2">
+        <section class="card metric" data-key="pm25"></section>
+        <section class="card metric" data-key="pm10"></section>
+      </div>
+      <div class="grid2">
+        <section class="card metric" data-key="temp"></section>
+        <section class="card metric" data-key="hum"></section>
+      </div>
+      <p class="note">Pin a reading to show it on the Controls tab.</p>
+
+      <section class="card" style="margin-top:14px">
+        <h2>History</h2>
+        <div class="chips" id="metricChips"></div>
+        <div class="chips" id="rangeChips" style="margin-top:8px"></div>
+        <div class="chart-head"><b id="chartVal"></b><span id="chartWhen"></span></div>
+        <svg class="chart" id="chart" viewBox="0 0 320 170"></svg>
+      </section>
+
+      <section class="card">
+        <h2>Today</h2>
+        <ul class="list" id="today"></ul>
+      </section>
+
+      <section class="card">
+        <h2>Air quality events</h2>
+        <ul class="list" id="events"></ul>
+      </section>
+
+      <section class="card">
+        <h2>Comfort</h2>
+        <ul class="list" id="comfort"></ul>
+      </section>
+
+      <section class="card">
+        <h2>Filter</h2>
+        <div class="val"><b id="filterPct">–</b><small id="filterSub"></small></div>
+        <div class="bar-track"><div class="bar-fill" id="filterBar" style="width:0"></div></div>
+      </section>
+
+      <div class="sect" style="margin-top:22px">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5.3 7 13 7 13s7-7.7 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
+        <span>Outdoor data</span><span class="sub" id="outPlace" style="font-size:15px;color:var(--muted)"></span>
+      </div>
+      <div id="outdoor">
+        <section class="card metric big"><h2>Air quality index (AQI)</h2><div class="val"><i id="outAqiDot"></i><b id="outAqi">–</b></div></section>
+        <div class="grid2">
+          <section class="card metric"><h2>PM2.5</h2><div class="val"><i id="outPm25Dot"></i><b id="outPm25">–</b><small>µg/m³</small></div></section>
+          <section class="card metric"><h2>PM10</h2><div class="val"><i id="outPm10Dot"></i><b id="outPm10">–</b><small>µg/m³</small></div></section>
+        </div>
+        <div class="grid2">
+          <section class="card metric"><h2>Temperature</h2><div class="val"><b id="outTemp">–</b><small>°C</small></div></section>
+          <section class="card metric"><h2>Humidity</h2><div class="val"><b id="outHum">–</b><small>%</small></div></section>
+        </div>
+      </div>
+      <section class="card" id="outNone" hidden>
+        <p>Set your location in Settings (the gear, top right) to see outdoor air quality.</p>
+      </section>
+      <p class="note">Outdoor data from Open-Meteo.</p>
+    </div>
+
+    <div class="pane" id="settings" hidden>
+      <section class="card">
+        <h2>Wi-Fi</h2>
+        <div class="kv"><span>Network</span><span id="ssid">–</span></div>
+        <div class="kv"><span>Address</span><span id="ip">–</span></div>
+        <div class="kv"><span>Also at</span><span>dyson-fan.local</span></div>
+        <div class="kv"><span>Clock</span><span id="clock">–</span></div>
+        <button class="danger" id="forget">Forget Wi-Fi</button>
+      </section>
+      <section class="card">
+        <h2>Location</h2>
+        <p id="locNow">Not set. Used for outdoor air quality.</p>
+        <div class="field"><input id="locQ" type="search" placeholder="Town or city" autocomplete="off"><button class="chip" id="locGo">Search</button></div>
+        <div class="results" id="locResults"></div>
+      </section>
+      <section class="card">
+        <h2>Filter</h2>
+        <div class="kv"><span>Used</span><span id="filterUsed">–</span></div>
+        <div class="kv"><span>Life left</span><span id="filterLeft">–</span></div>
+        <button class="btn" id="filterReset">I've replaced the filter</button>
+      </section>
+      <section class="card">
+        <p>After Forget Wi-Fi the fan opens its setup hotspot "esp32" (password esp32pwd). Join it and go to
+          http://10.10.0.1/wifi/ to pick a network.</p>
+      </section>
+    </div>
+  </main>
+</div>
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-bg" id="sheetBg"></div>
+  <div class="sheet-card"><h2 id="sheetTitle"></h2><div id="sheetBody"></div><button class="done" id="sheetDone">Done</button></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const API = "api/";
+let state = null, auto = false, dragging = false;
+
+// Dyson's own bands, worst first.
+const BANDS = [
+  ["Severe", "--severe", 250, 420], ["Extremely poor", "--epoor", 150, 350], ["Very poor", "--vpoor", 70, 100],
+  ["Poor", "--poor", 53, 75], ["Fair", "--fair", 35, 50], ["Good", "--good", -1, -1],
+];
+const band = (v, col) => BANDS.findIndex((b) => v > b[col]);
+const colour = (i) => `var(${BANDS[i][1]})`;
+
+let toastTimer;
+function toast(msg) {
+  $("toast").textContent = msg; $("toast").classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => $("toast").classList.remove("show"), 2200);
+}
+
+function setConn(cls, text) { $("conn").className = "conn " + cls; $("connText").textContent = text; }
+
+function showLevel(level) {
+  $("fill").style.width = (level * 10) + "%";
+  $("level").textContent = level || "–";
+  $("slider").setAttribute("aria-valuenow", level);
+}
+
+function render(s) {
+  state = s;
+  const on = !!s.state;
+  $("top").classList.toggle("off", !on);
+  $("power").classList.toggle("sel", on);
+  $("auto").classList.toggle("sel", on && auto);
+  $("slider").classList.toggle("dim", !on);
+  $("slider").classList.toggle("auto", on && auto);
+  $("flow").style.setProperty("--dur", (2.6 - s.vent_level * 0.2).toFixed(2) + "s");
+  if (!dragging) showLevel(s.vent_level);
+
+  const b25 = band(s.pm25_level, 2), b10 = band(s.pm10_level, 3), worst = Math.min(b25, b10);
+  const v = {
+    aq: [BANDS[worst][0], colour(worst)],
+    pm25: [s.pm25_level, colour(b25)],
+    pm10: [s.pm10_level, colour(b10)],
+    temp: [s.temperature.toFixed(1)],
+    hum: [Math.round(s.humidity)],
+  };
+  document.querySelectorAll("[data-val]").forEach((el) => {
+    const [text, dot] = v[el.dataset.val];
+    el.querySelector("b").textContent = text;
+    if (dot) el.querySelector("i").style.background = dot;
+  });
+  renderComfort(s);
+}
+
+// Readings: key -> [label, unit, has colour dot]
+const METRICS = {
+  aq: ["Air quality", "", true], pm25: ["PM2.5", "µg/m³", true], pm10: ["PM10", "µg/m³", true],
+  temp: ["Temperature", "°C", false], hum: ["Humidity", "%", false],
+};
+const PIN_ICON = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 3l6 6-3 1-4 4 1 5-2 2-4-4-5 5-1-1 5-5-4-4 2-2 5 1 4-4z"/></svg>';
+const valHtml = (k) => `<div class="val" data-val="${k}">${METRICS[k][2] ? "<i></i>" : ""}<b>–</b>${METRICS[k][1] ? `<small>${METRICS[k][1]}</small>` : ""}</div>`;
+
+let pinned;
+try { pinned = JSON.parse(localStorage.getItem("pinned")); } catch (e) {}
+if (!Array.isArray(pinned)) pinned = ["aq", "temp", "hum"];
+
+function buildPins() {
+  try { localStorage.setItem("pinned", JSON.stringify(pinned)); } catch (e) {}
+  document.querySelectorAll(".pin").forEach((p) => {
+    const on = pinned.includes(p.dataset.pin);
+    p.classList.toggle("sel", on);
+    p.setAttribute("aria-pressed", on);
+  });
+  const box = $("pinned");
+  box.style.setProperty("--cols", Math.min(pinned.length, 3) || 1);
+  box.innerHTML = pinned.map((k) => `<div class="mini"><h3>${METRICS[k][0]}</h3>${valHtml(k)}</div>`).join("");
+  if (state) render(state);
+}
+
+document.querySelectorAll("[data-key]").forEach((card) => {
+  const k = card.dataset.key;
+  card.innerHTML = `<div class="head"><h2>${METRICS[k][0]}</h2><button class="pin" data-pin="${k}" aria-label="Show on Controls">${PIN_ICON}</button></div>${valHtml(k)}`;
+});
+document.querySelectorAll(".pin").forEach((p) => p.addEventListener("click", () => {
+  const k = p.dataset.pin;
+  pinned = pinned.includes(k) ? pinned.filter((x) => x !== k) : Object.keys(METRICS).filter((x) => x === k || pinned.includes(x));
+  buildPins();
+}));
+buildPins();
+
+async function refresh() {
+  try {
+    const r = await fetch(API + "states/sensors", { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    render(await r.json());
+    setConn("ok", "");
+  } catch (e) {
+    setConn("err", "Offline");
+  }
+}
+
+async function send(body) {
+  const r = await fetch(API + "controls", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+function flash(el) { el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 350); }
+
+async function act(el, body, label) {
+  flash(el);
+  try { await send(body); setTimeout(refresh, 800); }
+  catch (e) { toast(label + " failed"); }
+}
+
+// Tabs; #data in the URL opens the data tab.
+function showTab(name) {
+  document.querySelectorAll(".tabs button").forEach((x) => x.classList.toggle("sel", x.dataset.tab === name));
+  document.querySelectorAll(".pane").forEach((p) => p.hidden = p.id !== name);
+  history.replaceState(null, "", name === "data" ? "#data" : location.pathname);
+}
+document.querySelectorAll(".tabs button").forEach((t) => t.addEventListener("click", () => showTab(t.dataset.tab)));
+if (location.hash === "#data") showTab("data");
+
+// Settings uses the Wi-Fi manager's own endpoints under wifi/.
+$("gear").addEventListener("click", async () => {
+  showTab("settings");
+  history.replaceState(null, "", "#settings");
+  try {
+    const r = await fetch("wifi/status.json", { cache: "no-store" });
+    const w = await r.json();
+    $("ssid").textContent = w.ssid || "–"; $("ip").textContent = w.ip || "–";
+  } catch (e) { $("ssid").textContent = "Unknown"; }
+});
+if (location.hash === "#settings") $("gear").click();
+
+$("forget").addEventListener("click", async () => {
+  if (!confirm("Forget this Wi-Fi?\n\nThe fan will disconnect and this page will stop working until it's set up again through its \"esp32\" hotspot.")) return;
+  $("forget").disabled = true;
+  try {
+    const r = await fetch("wifi/connect.json", { method: "DELETE" });
+    if (!r.ok) throw new Error(r.status);
+    toast("Wi-Fi forgotten. The fan is now in setup mode.");
+  } catch (e) {
+    toast("Failed to forget Wi-Fi");
+    $("forget").disabled = false;
+  }
+});
+
+// Power is a toggle on the fan, so only press it when the state differs.
+$("power").addEventListener("click", async () => {
+  const want = !(state && state.state);
+  try {
+    const res = await send({ attributes: "on_off" });
+    if (state) render({ ...state, state: res.state ?? (want ? 1 : 0) });
+    setTimeout(refresh, 800);
+  } catch (e) { toast("On/Off failed"); }
+});
+
+// Night mode, oscillation and direction are remote-style toggles the fan doesn't report back.
+document.querySelectorAll("[data-press]").forEach((b) =>
+  b.addEventListener("click", () => act(b, { attributes: b.dataset.press }, b.getAttribute("aria-label") || b.querySelector("h2").textContent)));
+
+$("auto").addEventListener("click", () => {
+  auto = !auto;
+  act($("auto"), { attributes: auto ? "auto_mode_on" : "auto_mode_off" }, "Auto mode");
+  if (state) render(state);
+});
+
+// Airflow slider: drag or tap, sends on release.
+const slider = $("slider");
+const levelAt = (x) => {
+  const r = slider.getBoundingClientRect();
+  return Math.min(10, Math.max(1, Math.ceil(((x - r.left) / r.width) * 10)));
+};
+slider.addEventListener("pointerdown", (e) => { dragging = true; slider.setPointerCapture(e.pointerId); showLevel(levelAt(e.clientX)); });
+slider.addEventListener("pointermove", (e) => { if (dragging) showLevel(levelAt(e.clientX)); });
+slider.addEventListener("pointerup", async (e) => {
+  if (!dragging) return;
+  dragging = false;
+  const level = levelAt(e.clientX);
+  showLevel(level);
+  auto = false;
+  try { await send({ set_fan: level }); setTimeout(refresh, 800); }
+  catch (err) { toast("Speed failed"); }
+});
+slider.addEventListener("pointercancel", () => { dragging = false; if (state) showLevel(state.vent_level); });
+
+/* ---------- Device settings: timer, schedule, filter, location ---------- */
+let cfg = null, timerEnd = 0, sheetMode = null;
+const FILTER_LIFE_H = 4380;                       // Dyson rates the filter at about 12 months of 12 h/day
+const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];          // Mon..Sun as tm_wday bit numbers
+const DAY_LETTER = ["S", "M", "T", "W", "T", "F", "S"];
+const DAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const pad = (n) => String(n).padStart(2, "0");
+const hm = (h, m) => `${pad(h)}:${pad(m)}`;
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const dur = (min) => min >= 60 ? `${Math.floor(min / 60)} h ${pad(Math.round(min % 60))} min` : `${Math.round(min)} min`;
+
+async function post(path, body) {
+  const r = await fetch(API + path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) });
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+function useSettings(s) {
+  cfg = s;
+  timerEnd = s.timer_left ? Date.now() + s.timer_left * 1000 : 0;
+  renderSettings();
+}
+
+async function loadSettings() {
+  try {
+    const r = await fetch(API + "settings", { cache: "no-store" });
+    if (r.ok) useSettings(await r.json());
+  } catch (e) {}
+}
+
+function daysText(mask) {
+  if (mask === 127) return "Every day";
+  if (mask === 62) return "Weekdays";
+  if (mask === 65) return "Weekends";
+  return DAY_ORDER.filter((d) => mask & (1 << d)).map((d) => DAY_SHORT[d]).join(", ");
+}
+
+function nextSchedule() {
+  const now = new Date();
+  let best = null;
+  for (const s of (cfg && cfg.sched) || []) {
+    if (!s.en || !s.days) continue;
+    for (let i = 0; i < 8; i++) {
+      const d = new Date(now); d.setDate(now.getDate() + i); d.setHours(s.h, s.m, 0, 0);
+      if (d > now && (s.days & (1 << d.getDay()))) { if (!best || d < best.at) best = { at: d, s }; break; }
+    }
+  }
+  return best;
+}
+
+function renderSettings() {
+  if (!cfg) return;
+  const left = timerEnd - Date.now();
+  $("timerText").textContent = left > 0 ? dur(Math.ceil(left / 60000)) + " left" : "Off";
+  $("timerTile").classList.toggle("on", left > 0);
+
+  const n = nextSchedule();
+  if (n) {
+    const today = new Date().toDateString() === n.at.toDateString();
+    $("schedText").textContent = `${n.s.act === "on" ? "On" : "Off"} ${today ? "" : DAY_SHORT[n.at.getDay()] + " "}${hm(n.s.h, n.s.m)}`;
+  } else {
+    $("schedText").textContent = cfg.sched && cfg.sched.length ? "All paused" : "None";
+  }
+
+  const used = cfg.filter_hours || 0, pct = Math.max(0, Math.round(100 - used / FILTER_LIFE_H * 100));
+  $("filterPct").textContent = pct + "%";
+  $("filterSub").textContent = `left · ${Math.round(used)} h used`;
+  $("filterBar").style.width = pct + "%";
+  $("filterUsed").textContent = Math.round(used) + " h";
+  $("filterLeft").textContent = pct + "%";
+
+  $("locNow").textContent = cfg.loc && cfg.loc.name ? cfg.loc.name : "Not set. Used for outdoor air quality.";
+  $("clock").textContent = cfg.time
+    ? new Date(cfg.time * 1000).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" })
+    : "Not set yet";
+  if (sheetMode === "sched") renderSchedSheet();
+}
+
+// Bottom sheet
+function openSheet(mode) {
+  sheetMode = mode;
+  $("sheet").hidden = false;
+  mode === "timer" ? renderTimerSheet() : renderSchedSheet();
+}
+function closeSheet() { $("sheet").hidden = true; sheetMode = null; }
+$("sheetBg").addEventListener("click", closeSheet);
+$("sheetDone").addEventListener("click", closeSheet);
+$("timerTile").addEventListener("click", () => openSheet("timer"));
+$("schedTile").addEventListener("click", () => openSheet("sched"));
+
+const TIMER_OPTS = [[0, "Off"], [15, "15 min"], [30, "30 min"], [60, "1 h"], [120, "2 h"], [240, "4 h"], [360, "6 h"], [480, "8 h"], [720, "12 h"]];
+function renderTimerSheet() {
+  $("sheetTitle").textContent = "Sleep timer";
+  const left = timerEnd - Date.now();
+  $("sheetBody").innerHTML = `<p style="text-align:center;color:var(--muted);margin:0 0 16px">${left > 0 ? "Turns off in " + dur(Math.ceil(left / 60000)) : "Turn the fan off after"}</p>
+    <div class="timer-opts">${TIMER_OPTS.map(([m, l]) => `<button class="chip${m === 0 && left <= 0 ? " sel" : ""}" data-min="${m}">${l}</button>`).join("")}</div>`;
+  $("sheetBody").querySelectorAll("[data-min]").forEach((b) => b.addEventListener("click", async () => {
+    const m = +b.dataset.min;
+    try { useSettings(await post("timer", { minutes: m })); renderTimerSheet(); toast(m ? "Timer set" : "Timer off"); }
+    catch (e) { toast("Timer failed"); }
+  }));
+}
+
+let draft = { h: 7, m: 0, act: "on", lvl: 0, days: 62 };
+function renderSchedSheet() {
+  $("sheetTitle").textContent = "Schedule";
+  const list = (cfg && cfg.sched) || [];
+  const rows = list.map((s, i) => `<li>
+      <div class="grow"><div><div>${hm(s.h, s.m)} · ${s.act === "on" ? "On" + (s.lvl ? ", speed " + s.lvl : "") : "Off"}</div><div class="sub">${daysText(s.days)}</div></div></div>
+      <label class="switch"><input type="checkbox" data-en="${i}"${s.en ? " checked" : ""}><span></span></label>
+      <button class="x" data-del="${i}" aria-label="Delete">×</button></li>`).join("");
+  $("sheetBody").innerHTML = `${list.length ? `<ul class="list">${rows}</ul>` : '<p class="empty" style="padding:0 0 8px">No schedules yet.</p>'}
+    <p class="lbl">Add a schedule</p>
+    <div class="field"><input type="time" id="sTime" value="${hm(draft.h, draft.m)}">
+      <select id="sAct"><option value="on">Turn on</option><option value="off">Turn off</option></select></div>
+    <div class="field" id="sLvlRow"><select id="sLvl"><option value="0">Keep last speed</option>${[...Array(10)].map((_, i) => `<option value="${i + 1}">Speed ${i + 1}</option>`).join("")}</select></div>
+    <div class="days">${DAY_ORDER.map((d) => `<button class="chip${draft.days & (1 << d) ? " sel" : ""}" data-day="${d}">${DAY_LETTER[d]}</button>`).join("")}</div>
+    <button class="btn" id="sAdd">Add schedule</button>
+    ${cfg && !cfg.time ? `<p class="note">The fan's clock isn't set yet. Schedules start once it gets the time from the internet.</p>` : ""}`;
+  $("sAct").value = draft.act;
+  $("sLvl").value = draft.lvl;
+  $("sLvlRow").hidden = draft.act !== "on";
+  $("sTime").addEventListener("change", (e) => { const [h, m] = e.target.value.split(":"); draft.h = +h || 0; draft.m = +m || 0; });
+  $("sAct").addEventListener("change", (e) => { draft.act = e.target.value; $("sLvlRow").hidden = draft.act !== "on"; });
+  $("sLvl").addEventListener("change", (e) => { draft.lvl = +e.target.value; });
+  $("sheetBody").querySelectorAll("[data-day]").forEach((b) => b.addEventListener("click", () => {
+    draft.days ^= 1 << +b.dataset.day;
+    b.classList.toggle("sel");
+  }));
+  $("sAdd").addEventListener("click", () => {
+    if (!draft.days) return toast("Pick at least one day");
+    if (list.length >= 10) return toast("Up to 10 schedules");
+    saveSched([...list, { en: 1, h: draft.h, m: draft.m, act: draft.act, lvl: draft.act === "on" ? draft.lvl : 0, days: draft.days }]);
+  });
+  $("sheetBody").querySelectorAll("[data-en]").forEach((c) => c.addEventListener("change", () =>
+    saveSched(list.map((s, i) => i === +c.dataset.en ? { ...s, en: c.checked ? 1 : 0 } : s))));
+  $("sheetBody").querySelectorAll("[data-del]").forEach((b) => b.addEventListener("click", () =>
+    saveSched(list.filter((_, i) => i !== +b.dataset.del))));
+}
+
+async function saveSched(list) {
+  try { useSettings(await post("settings", { sched: list })); }
+  catch (e) { toast("Couldn't save schedule"); }
+}
+
+$("filterReset").addEventListener("click", async () => {
+  if (!confirm("Reset filter life to 100%?")) return;
+  try { useSettings(await post("filter_reset")); toast("Filter life reset"); }
+  catch (e) { toast("Reset failed"); }
+});
+
+// Location search (Open-Meteo geocoding, straight from the phone)
+async function searchLoc() {
+  const q = $("locQ").value.trim();
+  if (!q) return;
+  $("locResults").innerHTML = '<p class="empty">Searching…</p>';
+  try {
+    const j = await (await fetch(`https://geocoding-api.open-meteo.com/v1/search?count=6&language=en&name=${encodeURIComponent(q)}`)).json();
+    const res = j.results || [];
+    $("locResults").innerHTML = res.length
+      ? res.map((p, i) => `<button data-i="${i}">${esc(p.name)} <span>${esc([p.admin1, p.country].filter(Boolean).join(", "))}</span></button>`).join("")
+      : '<p class="empty">No places found.</p>';
+    $("locResults").querySelectorAll("button").forEach((b) => b.addEventListener("click", async () => {
+      const p = res[+b.dataset.i];
+      const loc = { name: [p.name, p.country_code].filter(Boolean).join(", ").slice(0, 40), lat: +p.latitude.toFixed(3), lon: +p.longitude.toFixed(3) };
+      try {
+        useSettings(await post("settings", { loc }));
+        $("locResults").innerHTML = ""; $("locQ").value = "";
+        toast("Location saved");
+        loadOutdoor(true);
+      } catch (e) { toast("Couldn't save location"); }
+    }));
+  } catch (e) { $("locResults").innerHTML = '<p class="empty">Search failed. Is the phone online?</p>'; }
+}
+$("locGo").addEventListener("click", searchLoc);
+$("locQ").addEventListener("keydown", (e) => { if (e.key === "Enter") searchLoc(); });
+
+/* ---------- Outdoor (Open-Meteo, fetched by the phone) ---------- */
+const EAQI = [[20, "Good", "--good"], [40, "Fair", "--fair"], [60, "Moderate", "--poor"], [80, "Poor", "--vpoor"], [100, "Very poor", "--epoor"], [Infinity, "Extremely poor", "--severe"]];
+let outAt = 0;
+async function loadOutdoor(force) {
+  const loc = cfg && cfg.loc && cfg.loc.name ? cfg.loc : null;
+  $("outdoor").hidden = !loc;
+  $("outNone").hidden = !!loc;
+  $("outPlace").textContent = loc ? "· " + loc.name : "";
+  if (!loc || (!force && Date.now() - outAt < 15 * 60000)) return;
+  outAt = Date.now();
+  const q = `latitude=${loc.lat}&longitude=${loc.lon}`;
+  try {
+    const [aq, wx] = await Promise.all([
+      fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?${q}&current=european_aqi,pm2_5,pm10`).then((r) => r.json()),
+      fetch(`https://api.open-meteo.com/v1/forecast?${q}&current=temperature_2m,relative_humidity_2m`).then((r) => r.json()),
+    ]);
+    const a = aq.current, w = wx.current;
+    const e = EAQI.find((x) => a.european_aqi < x[0]);
+    $("outAqi").textContent = e[1]; $("outAqiDot").style.background = `var(${e[2]})`;
+    const p25 = Math.round(a.pm2_5), p10 = Math.round(a.pm10);
+    $("outPm25").textContent = p25; $("outPm25Dot").style.background = colour(band(p25, 2));
+    $("outPm10").textContent = p10; $("outPm10Dot").style.background = colour(band(p10, 3));
+    $("outTemp").textContent = w.temperature_2m.toFixed(1);
+    $("outHum").textContent = Math.round(w.relative_humidity_2m);
+  } catch (e) {
+    outAt = 0;
+    $("outAqi").textContent = "Unavailable";
+  }
+}
+
+/* ---------- History: rows are [time, temp×10, humidity, PM2.5 avg, PM2.5 max, PM10 avg, speed (0 = off)] ---------- */
+let hist = null, histAt = 0, metric = "pm25", range = 24, cursor = null, cursorTimer;
+const HM = {
+  pm25: ["PM2.5", "µg/m³", (r) => r[3]], pm10: ["PM10", "µg/m³", (r) => r[5]],
+  temp: ["Temperature", "°C", (r) => r[1] / 10], hum: ["Humidity", "%", (r) => r[2]],
+};
+
+function chipRow(el, items, current, onPick) {
+  el.innerHTML = items.map(([k, l]) => `<button class="chip${k === current ? " sel" : ""}" data-k="${k}">${l}</button>`).join("");
+  el.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
+    el.querySelectorAll("button").forEach((x) => x.classList.toggle("sel", x === b));
+    onPick(b.dataset.k);
+  }));
+}
+chipRow($("metricChips"), Object.entries(HM).map(([k, v]) => [k, v[0]]), metric, (k) => { metric = k; cursor = null; drawChart(); });
+chipRow($("rangeChips"), [["24", "24 hours"], ["168", "7 days"]], "24", (k) => { range = +k; cursor = null; drawChart(); });
+
+async function loadHistory(force) {
+  if (!force && hist && Date.now() - histAt < 60000) return;
+  try {
+    const r = await fetch(API + "history", { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    hist = await r.json();
+    histAt = Date.now();
+  } catch (e) { return; }
+  drawChart(); renderToday(); renderEvents();
+}
+
+const fmtWhen = (t) => {
+  const d = new Date(t * 1000), now = new Date();
+  const yest = new Date(now); yest.setDate(now.getDate() - 1);
+  const day = d.toDateString() === now.toDateString() ? "Today" : d.toDateString() === yest.toDateString() ? "Yesterday" : DAY_SHORT[d.getDay()];
+  return `${day} ${hm(d.getHours(), d.getMinutes())}`;
+};
+
+function chartPoints() {
+  const from = Date.now() / 1000 - range * 3600;
+  return ((hist && hist.rows) || []).filter((r) => r[0] >= from);
+}
+
+function drawChart() {
+  const svg = $("chart"), W = 320, H = 170, L = 30, R = 6, T = 8, B = 22;
+  const pts = chartPoints();
+  if (pts.length < 2) {
+    svg.innerHTML = `<text x="160" y="80" text-anchor="middle">Collecting data.</text><text x="160" y="96" text-anchor="middle">Readings are saved every 5 minutes.</text>`;
+    $("chartVal").textContent = ""; $("chartWhen").textContent = "";
+    return;
+  }
+  const get = HM[metric][2], vals = pts.map(get);
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (metric === "pm25" || metric === "pm10") { lo = 0; hi = Math.max(10, Math.ceil(hi / 10) * 10); }
+  else if (metric === "temp") { lo = Math.floor(lo) - 1; hi = Math.ceil(hi) + 1; }
+  else { lo = Math.max(0, Math.floor((lo - 5) / 10) * 10); hi = Math.min(100, Math.ceil((hi + 5) / 10) * 10); }
+
+  const now = Date.now() / 1000, from = now - range * 3600;
+  const x = (t) => L + (t - from) / (now - from) * (W - L - R);
+  const y = (v) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+
+  let g = "";
+  for (const v of [lo, (lo + hi) / 2, hi]) {
+    g += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L - 5}" y="${y(v) + 3}" text-anchor="end">${+v.toFixed(1)}</text>`;
+  }
+  // Time labels: every 6 h for 24 h, each midnight for 7 days
+  const d = new Date(from * 1000); d.setMinutes(0, 0, 0);
+  if (range === 24) d.setHours(Math.ceil(d.getHours() / 6) * 6); else { d.setHours(24); }
+  while (d.getTime() / 1000 < now) {
+    const t = d.getTime() / 1000;
+    const label = range === 24 ? hm(d.getHours(), 0) : DAY_SHORT[d.getDay()];
+    g += `<line class="grid" x1="${x(t)}" x2="${x(t)}" y1="${T}" y2="${H - B}" stroke-dasharray="2 3"/><text x="${x(t)}" y="${H - 6}" text-anchor="middle">${label}</text>`;
+    range === 24 ? d.setHours(d.getHours() + 6) : d.setDate(d.getDate() + 1);
+  }
+  // Line and area, broken where readings are missing
+  const step = (hist.step || 300) * 3;
+  let line = "", area = "", seg = [];
+  const flush = () => {
+    if (seg.length > 1) {
+      const p = seg.map((r) => `${x(r[0]).toFixed(1)},${y(get(r)).toFixed(1)}`).join(" L");
+      line += `M${p} `;
+      area += `M${x(seg[0][0]).toFixed(1)},${y(lo)} L${p} L${x(seg[seg.length - 1][0]).toFixed(1)},${y(lo)} Z `;
+    }
+    seg = [];
+  };
+  pts.forEach((r, i) => { if (i && r[0] - pts[i - 1][0] > step) flush(); seg.push(r); });
+  flush();
+
+  const c = pts[cursor ?? pts.length - 1];
+  svg.innerHTML = `<defs><linearGradient id="areaGrad" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+    ${g}<path d="${area}" fill="url(#areaGrad)"/><path class="line" d="${line}"/>
+    ${cursor != null ? `<line class="cursor" x1="${x(c[0])}" x2="${x(c[0])}" y1="${T}" y2="${H - B}"/>` : ""}
+    <circle cx="${x(c[0])}" cy="${y(get(c))}" r="4" fill="#fff"/>`;
+  const v = get(c);
+  $("chartVal").textContent = `${metric === "temp" ? v.toFixed(1) : Math.round(v)} ${HM[metric][1]}`;
+  $("chartWhen").textContent = cursor == null ? "Latest" : fmtWhen(c[0]);
+}
+
+// Scrub the chart with a finger or mouse
+const chartEl = $("chart");
+function scrub(e) {
+  const pts = chartPoints();
+  if (pts.length < 2) return;
+  const rc = chartEl.getBoundingClientRect(), now = Date.now() / 1000, from = now - range * 3600;
+  const t = from + ((e.clientX - rc.left) / rc.width * 320 - 30) / (320 - 36) * (now - from);
+  let best = 0;
+  pts.forEach((r, i) => { if (Math.abs(r[0] - t) < Math.abs(pts[best][0] - t)) best = i; });
+  cursor = best;
+  clearTimeout(cursorTimer);
+  drawChart();
+}
+chartEl.addEventListener("pointerdown", scrub);
+chartEl.addEventListener("pointermove", (e) => { if (e.pointerType === "mouse" || e.buttons) scrub(e); });
+chartEl.addEventListener("pointerleave", () => { cursorTimer = setTimeout(() => { cursor = null; drawChart(); }, 1500); });
+chartEl.addEventListener("pointerup", () => { cursorTimer = setTimeout(() => { cursor = null; drawChart(); }, 3000); });
+
+function renderToday() {
+  const mid = new Date(); mid.setHours(0, 0, 0, 0);
+  const t = ((hist && hist.rows) || []).filter((r) => r[0] * 1000 >= mid.getTime());
+  if (!t.length) { $("today").innerHTML = '<li class="sub">No readings yet today.</li>'; return; }
+  const step = (hist.step || 300) / 60;
+  const good = t.filter((r) => band(r[3], 2) === 5 && band(r[5], 3) === 5).length * step;
+  const ran = t.filter((r) => r[6] > 0).length * step;
+  const byHour = {};
+  t.forEach((r) => { const h = new Date(r[0] * 1000).getHours(); (byHour[h] = byHour[h] || []).push(r[3]); });
+  const hours = Object.entries(byHour).map(([h, v]) => [+h, v.reduce((a, b) => a + b, 0) / v.length]);
+  const temps = t.map((r) => r[1] / 10), hums = t.map((r) => r[2]);
+  const items = [["Air quality Good", `${dur(good)} of ${dur(t.length * step)}`]];
+  if (hours.length > 1) {
+    const best = hours.reduce((a, b) => (b[1] < a[1] ? b : a)), worst = hours.reduce((a, b) => (b[1] > a[1] ? b : a));
+    items.push(["Cleanest hour", `${hm(best[0], 0)} · PM2.5 ${Math.round(best[1])}`]);
+    items.push(["Worst hour", `${hm(worst[0], 0)} · PM2.5 ${Math.round(worst[1])}`]);
+  }
+  items.push(["Temperature", `${Math.min(...temps).toFixed(1)} – ${Math.max(...temps).toFixed(1)} °C`]);
+  items.push(["Humidity", `${Math.min(...hums)} – ${Math.max(...hums)} %`]);
+  items.push(["Fan ran", dur(ran)]);
+  $("today").innerHTML = items.map(([k, v]) => `<li><span>${k}</span><span class="sub">${v}</span></li>`).join("");
+}
+
+// A spike: PM2.5 peak at least 20 and double (or +15 over) the previous hour's median; it ends when back near that level.
+function findEvents(rows) {
+  const out = [];
+  let ev = null;
+  rows.forEach((r, i) => {
+    if (i && r[0] - rows[i - 1][0] > 1800) ev = null;        // gap in data: drop any open event
+    const prev = rows.slice(Math.max(0, i - 12), i).map((x) => x[3]).sort((a, b) => a - b);
+    if (!ev) {
+      if (prev.length < 6) return;
+      const base = prev[prev.length >> 1];
+      if (r[4] >= 20 && r[4] >= Math.max(base * 2, base + 15)) ev = { start: r[0], peak: r[4], base };
+    } else {
+      ev.peak = Math.max(ev.peak, r[4]);
+      if (r[3] <= ev.base + 5) { ev.end = r[0]; out.push(ev); ev = null; }
+    }
+  });
+  if (ev) out.push(ev);
+  return out.reverse();
+}
+
+function renderEvents() {
+  const evs = findEvents((hist && hist.rows) || []).slice(0, 8);
+  $("events").innerHTML = evs.length
+    ? evs.map((e) => `<li><div class="grow"><span class="dot" style="background:${colour(band(e.peak, 2))}"></span>
+        <div><div>${fmtWhen(e.start)}</div><div class="sub">PM2.5 peaked at ${e.peak} µg/m³</div></div></div>
+        <span class="sub">${e.end ? "Cleared in " + dur((e.end - e.start) / 60) : "Ongoing"}</span></li>`).join("")
+    : '<li class="sub">No spikes in the last 7 days. Cooking, candles and dusting usually show up here.</li>';
+}
+
+function renderComfort(s) {
+  if (!s.temperature && !s.humidity) return;
+  const T = s.temperature, RH = Math.max(1, s.humidity);
+  const g = Math.log(RH / 100) + 17.62 * T / (243.12 + T), dew = 243.12 * g / (17.62 - g);
+  const hum = RH < 30 ? "Dry. Below 30% can irritate eyes, skin and throat."
+    : RH <= 60 ? "Comfortable."
+    : RH <= 70 ? "Humid. Watch for condensation on cold windows."
+    : "Very humid. Condensation and mould are likely.";
+  const tmp = T < 16 ? "Cool. 18–21 °C suits most rooms." : T <= 24 ? "Comfortable." : "Warm. Above 24 °C can disturb sleep.";
+  $("comfort").innerHTML = [
+    [`Humidity ${Math.round(s.humidity)}%`, hum],
+    [`Temperature ${T.toFixed(1)} °C`, tmp],
+    [`Dew point ${dew.toFixed(1)} °C`, "Surfaces colder than this get condensation."],
+  ].map(([k, v]) => `<li style="display:block"><div>${k}</div><div class="sub">${v}</div></li>`).join("");
+}
+
+// Data tab and settings refresh hooks
+document.querySelector('[data-tab="data"]').addEventListener("click", () => { loadHistory(); loadOutdoor(); });
+$("gear").addEventListener("click", loadSettings);
+if (location.hash === "#data") { loadHistory(); }
+
+refresh();
+loadSettings().then(() => {
+  if (location.hash === "#data") loadOutdoor();
+  if (location.hash === "#timer") openSheet("timer");
+  if (location.hash === "#schedule") openSheet("sched");
+});
+setInterval(() => { if (!document.hidden && !dragging) refresh(); }, 4000);
+setInterval(() => { if (!document.hidden) { renderSettings(); if (!$("data").hidden) loadHistory(true); } }, 60000);
+setInterval(() => { if (!document.hidden) loadSettings(); }, 30000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { refresh(); loadSettings(); } });
+</script>
+</body>
+</html>
