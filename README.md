@@ -4,6 +4,22 @@ A phone-friendly control page for a Dyson purifier fitted with
 [Dyson_UART_parser](https://github.com/Alex-Trusk/Dyson_UART_parser), which reads the fan
 over its diagnostics UART and sends IR commands.
 
+## Built-in dashboard (current)
+
+`fan.html` is a Dyson-app-style dashboard that now runs on the fan's own ESP32, so the C3 relay
+below is no longer needed. It is embedded by the separate `dyson-fan-fw` firmware project
+(`tools/embed_page.py` there inlines `fonts/` and copies `icons/` and `manifest.json`).
+It calls the fan's API on the same origin: `api/states/sensors`, `api/controls`, `api/history`,
+`api/settings`, `api/timer`, `api/filter_reset`, and the Wi-Fi manager under `wifi/`. Outdoor
+data and the location search come straight from Open-Meteo in the browser.
+
+- `fan.html`: Controls, Data and insights (history graphs, today, spike events, comfort, filter,
+  outdoor) and Settings.
+- `fonts/`: Jost (SIL Open Font License, see `fonts/OFL.txt`).
+- `icons/`: home-screen icons, rendered from `icons/icon.html` with headless Chrome.
+
+## C3 relay (previous)
+
 That firmware's HTTP API sends no CORS headers, so a browser page can't call it directly.
 This project serves the page and relays a fixed set of commands to it.
 
